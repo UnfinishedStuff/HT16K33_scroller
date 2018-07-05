@@ -2,12 +2,46 @@
 
 const byte device_address = 0x70;
 
-const byte letters[3][6] = {
-  {0b00111111, 0b01001000, 0b01001000, 0b01001000, 0b00111111, 0b00000000},
-  {0b01111111, 0b01001001, 0b01001001, 0b01001001, 0b00110110, 0b00000000},
-  {0b00111110, 0b01000001, 0b01000001, 0b01000001, 0b01000001, 0b00000000}
+//Declare arrays containing the letters
+const byte letters[28][6] = {
+  {0b00111111, 0b01001000, 0b01001000, 0b01001000, 0b00111111, 0b00000000}, //A
+  {0b01111111, 0b01001001, 0b01001001, 0b01001001, 0b00110110, 0b00000000}, //B
+  {0b00111110, 0b01000001, 0b01000001, 0b01000001, 0b01000001, 0b00000000}, //C
+  {0b01111111, 0b01000001, 0b01000001, 0b01000001, 0b00111110, 0b00000000}, //D
+  
+  {0b01111111, 0b01001001, 0b01001001, 0b01000001, 0b01000001, 0b00000000}, //E
+  {0b01111111, 0b01001000, 0b01001000, 0b01001000, 0b01000000, 0b00000000}, //F
+  {0b00111110, 0b01000001, 0b01001001, 0b01001001, 0b00000110, 0b00000000}, //G
+  {0b01111111, 0b00001000, 0b00001000, 0b00001000, 0b01111111, 0b00000000}, //H
+  
+  {0b01000001, 0b01000001, 0b01111111, 0b01000001, 0b01000001, 0b00000000}, //I
+  {0b01000001, 0b01000001, 0b01111110, 0b01000000, 0b01000000, 0b00000000}, //J
+  {0b01111111, 0b00001000, 0b00010100, 0b00100010, 0b01000001, 0b00000000}, //K
+  {0b01111111, 0b00000001, 0b00000001, 0b00000001, 0b00000001, 0b00000000}, //L
+
+  {0b01111111, 0b00100000, 0b00011000, 0b00100000, 0b01111111, 0b00000000}, //M
+  {0b01111111, 0b00100000, 0b00011000, 0b00000100, 0b01111111, 0b00000000}, //N
+  {0b00111110, 0b01000001, 0b01000001, 0b01000001, 0b00111110, 0b00000000}, //O
+  {0b01111111, 0b01001000, 0b01001000, 0b01001000, 0b00110000, 0b00000000}, //P
+
+  {0b00111110, 0b01000001, 0b01000101, 0b01000010, 0b00111101, 0b00000000}, //Q
+  {0b01111111, 0b01001000, 0b01001100, 0b01001010, 0b00110001, 0b00000000}, //R
+  {0b00110001, 0b01001001, 0b01001001, 0b01000101, 0b01000010, 0b00000000}, //S
+  {0b01000000, 0b01000000, 0b01111111, 0b01000000, 0b01000000, 0b00000000}, //T
+
+  {0b01111110, 0b00000001, 0b00000001, 0b00000001, 0b01111110, 0b00000000}, //U
+  {0b01111000, 0b00000110, 0b00000001, 0b00000110, 0b01111000, 0b00000000}, //V
+  {0b01111111, 0b00000010, 0b00001100, 0b00000010, 0b01111111, 0b00000000}, //W
+  {0b01100011, 0b00010100, 0b00001000, 0b00010100, 0b01100011, 0b00000000}, //X
+
+  {0b01100000, 0b00011000, 0b00000111, 0b00011000, 0b01100000, 0b00000000}, //Y
+  {0b01000011, 0b01000101, 0b01001001, 0b01010001, 0b01100001, 0b00000000}, //Z
+  {0b00111110, 0b01000001, 0b01000001, 0b01000001, 0b00111110, 0b00000000}, //
+  {0b01111111, 0b01001000, 0b01001000, 0b01001000, 0b00110000, 0b00000000}, //
+  
                            };
 
+//Declare an array for blanking the display
 byte blank_display[16] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
 void setup() {
@@ -32,43 +66,35 @@ void setup() {
 void loop()
 {
   Serial.println("Restarting loop");
-  byte data[6] = {0,0,0,0,0,0};
+  //Declare a large array for holding the data to be displayed
+  byte data[96];
 
+  //An int for counting the number of characters to be displayed
   byte numLetters = 0;
 
-  //If there is serial data, append the LED values for each char to "data"
+  //If there is serial data, write the LED values for each char to "data"
   while (Serial.available() > 0)
     {
       int incomingByte = Serial.read();
-      Serial.print("Byte = ");Serial.println(incomingByte);
-      Serial.println(char(incomingByte - 65));
       memcpy(data + (numLetters * 6), letters[incomingByte - 65], 6);
       numLetters += 1;
     }
 
   //Add 16 columns (an entire display) of blank to the end
   memcpy(data + (numLetters * 6), blank_display, 16);
-
-  //byte data2[32] = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,
-  //                  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-
+ 
   //Calculate the number of bytes which need sent
   int numBytes = (numLetters * 6) + 16;
-  //int numBytes2 = 32;
-
-    
+ 
   //For each column of data which needs shown (except the last 16)
   for (int i = 0; i < (numBytes - 16); i++)
     {
       //Display that column at column 1 plus the next 15 columns
       block_write(0x00, &data[i], 16);
-      delay(100);
+      delay(150);
     }
-
-
-  block_write(0x00, blank_display, 16);
-  delay(1000);
-
+  
+  Serial.println("Finished loop");
 }
 
 void displaySetup (byte mode)
@@ -103,21 +129,6 @@ void oscillator (byte mode)
     Wire.endTransmission();
   }
 }
-/*
-  void block_write(byte reg, byte *values, int numValues)
-  {
-    Serial.println("Prepping bytes");
-
-    Wire.println("Sending data");
-    Wire.beginTransmission(device_address);
-    Wire.write(reg);
-    for (int x = 0; x < numValues; x++)
-      {
-        Wire.write(values[x]);
-      }
-    Wire.endTransmission();
-  }
-*/
 
 void block_write(byte reg, byte *values, int numValues)
 {
