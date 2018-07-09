@@ -138,7 +138,7 @@ byte blank_display[16] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
 void setup() {
   Wire.begin();
-  Serial.begin(115200);
+  Serial.begin(9600);
 
   //Turn the oscillator to ON
   oscillator(0b00000001);
@@ -162,8 +162,6 @@ void setup() {
 
 void loop()
 {
-  //Serial.println("Restarting loop");
-
   //An int for counting the number of characters to be displayed
   byte numLetters = 0;
 
@@ -172,7 +170,7 @@ void loop()
   if (Serial.available())
   {
     //While there are unprocessed characters
-    while (Serial.available() > 0)
+    while (Serial.available())
       {
         //Store the next char in incomingByte
         int incomingByte = Serial.read();
@@ -206,7 +204,6 @@ void loop()
     memset(data,0,numBytes);
   }
   delay(25);
-  //Serial.println("Finished loop");
 }
 
 void displaySetup (byte mode)
