@@ -1,10 +1,17 @@
 #include <Wire.h>
 
+//Const byte for holding the HT16K33's i2c address
 const byte device_address = 0x70;
 
-//Declare arrays containing the letters
+//Const int for holding the delay in ms between each frame moving
+const int pause = 100;
+
+//Declare a large array for holding the data to be displayed
+byte data[600];
+
+//Declare an array of arrays containing the letters
 const byte letters[95][6] = {
-  {0b00000000, 0b00000000, 0b00000000, 0b00000000, 0b00000000, 0b00000000}, //space32
+  {0b00000000, 0b00000000, 0b00000000, 0b00000000, 0b00000000, 0b00000000}, //space
   {0b00000000, 0b00000000, 0b01111101, 0b00000000, 0b00000000, 0b00000000}, //!
   {0b00000000, 0b11100000, 0b00000000, 0b11100000, 0b00000000, 0b00000000}, //"
   {0b00010100, 0b01111111, 0b00010100, 0b01111111, 0b00010100, 0b00000000}, //#
@@ -126,7 +133,7 @@ const byte letters[95][6] = {
   {0b00001100, 0b00010000, 0b00001100, 0b00000100, 0b00011000, 0b00000000}, //~
                            };
 
-//Declare an array for blanking the display
+//Declare an array holding a display's worth of blank LEDs (screen blank)
 byte blank_display[16] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
 void setup() {
@@ -143,46 +150,63 @@ void setup() {
   displaySetup(0b10000001);
 
   //Blank the display
-  //Blank the display
   block_write(0x00, blank_display, 16);
+
+  //Set the first 16 bytes of data[] to be blank
+  for(int x = 0; x < 16; x++)
+    {
+      data[x] = 0b00000000;
+    }
 }
+
 
 void loop()
 {
-  Serial.println("Restarting loop");
-  //Declare a large array for holding the data to be displayed
-  byte data[600];
+  //Serial.println("Restarting loop");
 
   //An int for counting the number of characters to be displayed
   byte numLetters = 0;
 
-  //If there is serial data, write the LED values for each char to "data"
-  while (Serial.available() > 0)
-    {
-      int incomingByte = Serial.read();
-      if (incomingByte >= 32 and incomingByte <= 126)
-        {
-        Serial.println(incomingByte);
-        memcpy(data + (numLetters * 6), letters[incomingByte - 32], 6);
-        numLetters += 1;
-        }
-    }
+  /* If there is serial data, take each char, fetch the corresponding bytes for
+  the LED representation and append them to the data[] array */
+  if (Serial.available())
+  {
+    //While there are unprocessed characters
+    while (Serial.available() > 0)
+      {
+        //Store the next char in incomingByte
+        int incomingByte = Serial.read();
+        //If incomingByte is within the ASCII values for meaningful characters
+        if (incomingByte >= 32 and incomingByte <= 126)
+          {
+          Serial.println(incomingByte);
+          //Copy the bytes for the LED representation of that char to data
+          memcpy(data + (numLetters * 6) + 16, letters[incomingByte - 32], 6);
+          //Increase the count of letters processed
+          numLetters += 1;
+          }
+      }
 
-  //Add 16 columns (an entire display) of blank to the end
-  memcpy(data + (numLetters * 6), blank_display, 16);
+    //Add 16 columns (an entire display) of blank to the end
+    memcpy(data + (numLetters * 6) + 16, blank_display, 16);
  
-  //Calculate the number of bytes which need sent
-  int numBytes = (numLetters * 6) + 16;
+    /* Calculate the number of bytes which need sent. 6 for each letter, 16 for 
+    blank screens at both the start and end */
+    int numBytes = (numLetters * 6) + 32;
  
-  //For each column of data which needs shown (except the last 16)
-  for (int i = 0; i < (numBytes - 16); i++)
-    {
-      //Display that column at column 1 plus the next 15 columns
-      block_write(0x00, &data[i], 16);
-      delay(150);
-    }
-  
-  Serial.println("Finished loop");
+    //For each column of data which needs shown (except the last 16)
+    for (int i = 0; i < (numBytes - 16); i++)
+      {
+        //Display that column at column 1 plus the next 15 columns
+        block_write(0x00, &data[i], 16);
+        delay(pause);
+      }
+
+    //All data has been displayed, blank all of the used bytes in data[]
+    memset(data,0,numBytes);
+  }
+  delay(25);
+  //Serial.println("Finished loop");
 }
 
 void displaySetup (byte mode)
